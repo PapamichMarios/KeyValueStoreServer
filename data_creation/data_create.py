@@ -19,26 +19,54 @@ can potentially use for creating data. For example:
 '''
 
 
+def random_float() -> tuple:
+    return random.uniform(0, 100)
+
+
+def random_int() -> tuple:
+    return random.randint(0, 100)
+
+
 def random_string(length: int) -> str:
     return ''.join(random.choice(string.ascii_lowercase) for i in range(length))
 
 
-def construct_inner(current_level: int, max_level: int) -> dict:
+def random_variable(file: list) -> tuple:
+    index = random.randint(0, len(file)-1)
+    return file[index][0], file[index][1]
+
+
+def return_value(type: string, current_level: int, max_level: int, key_values_file: list, args: object):
+    if type == 'int':
+        return random_int()
+    elif type == 'float':
+        return random_float()
+    elif type == 'set':
+        return construct_inner(current_level=current_level, max_level=max_level, key_values_file=key_values_file, args=args)
+    else:
+        return random_string(args.l)
+
+
+def construct_inner(current_level: int, max_level: int, key_values_file: list, args: object) -> dict:
     child = {}
     if max_level == current_level:
 
         children = random.randint(1, args.m)
         for x in range(0, children):
-            child[random_string(args.l)] = random_string(args.l)
+            value = ''
+            while value != 'set':
+                (key, value) = random_variable(file=key_values_file)
+            child[key] = return_value(type=value, current_level=0, max_level=args.d, key_values_file=key_values_file, args=args)
 
         return child
 
-    child[random_string(args.l)] = construct_inner(current_level=current_level + 1, max_level=max_level)
+    (key, value) = random_variable(file=key_values_file)
+    child[key] = return_value(type=value, current_level=0, max_level=args.d, key_values_file=key_values_file, args=args)
     return child
 
 
-if __name__ == "__main__":
-
+def main():
+    # arg parsing
     parser = argparse.ArgumentParser(description="Process arguments for data creation")
     parser.add_argument('-n', type=int, help="number of lines of the generated file", default=1000)
     parser.add_argument('-d', type=int, help="maximum level of nesting", default=5)
@@ -47,15 +75,27 @@ if __name__ == "__main__":
     parser.add_argument('-k', type=str, help="file containing a space separated-list of key names and their data types")
 
     args = parser.parse_args()
+
+    # read key file
+    key_values_file = []
+    with open(args.k, 'r') as file:
+        key_values_file = [[str(x) for x in line.split()] for line in file]
+
     key_values = {}
     for i in range(0, args.n):
 
         inner = {}
         children = random.randint(1, args.m)
         for j in range(0, children):
-            inner[random_string(args.l)] = construct_inner(current_level=0, max_level=args.d)
+            (key, value) = random_variable(file=key_values_file)
+            inner[key] = return_value(type=value, current_level=0, max_level=args.d, key_values_file=key_values_file,
+                                      args=args)
 
         key_values['key_' + str(i)] = inner
 
     with open('file.txt', 'w') as file:
         file.write(json.dumps(key_values))
+
+
+if __name__ == "__main__":
+    main()
