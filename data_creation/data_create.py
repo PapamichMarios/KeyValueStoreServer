@@ -32,7 +32,7 @@ def random_string(length: int) -> str:
 
 
 def random_variable(file: list) -> tuple:
-    index = random.randint(0, len(file)-1)
+    index = random.randint(0, len(file) - 1)
     return file[index][0], file[index][1]
 
 
@@ -42,7 +42,8 @@ def return_value(type: string, current_level: int, max_level: int, key_values_fi
     elif type == 'float':
         return random_float()
     elif type == 'set':
-        return construct_inner(current_level=current_level, max_level=max_level, key_values_file=key_values_file, args=args)
+        return construct_inner(current_level=current_level, max_level=max_level, key_values_file=key_values_file,
+                               args=args)
     else:
         return random_string(args.l)
 
@@ -56,7 +57,8 @@ def construct_inner(current_level: int, max_level: int, key_values_file: list, a
             value = ''
             while value != 'set':
                 (key, value) = random_variable(file=key_values_file)
-            child[key] = return_value(type=value, current_level=0, max_level=args.d, key_values_file=key_values_file, args=args)
+            child[key] = return_value(type=value, current_level=0, max_level=args.d, key_values_file=key_values_file,
+                                      args=args)
 
         return child
 
@@ -94,7 +96,9 @@ def main():
         key_values['key_' + str(i)] = inner
 
     with open('file.txt', 'w') as file:
-        file.write(json.dumps(key_values))
+        for key, value in key_values.items():
+            row = "\"" + key + "\" : " + json.dumps(value) + "\n"
+            file.write(row.replace(',', ' ;'))
 
 
 if __name__ == "__main__":
