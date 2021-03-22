@@ -79,7 +79,6 @@ def main():
     args = parser.parse_args()
 
     # read key file
-    key_values_file = []
     with open(args.k, 'r') as file:
         key_values_file = [[str(x) for x in line.split()] for line in file]
 
@@ -95,7 +94,7 @@ def main():
 
         key_values['key_' + str(i)] = inner
 
-    with open('file.txt', 'w') as file:
+    with open('dataToIndex.txt', 'w') as file:
         for key, value in key_values.items():
             row = "\"" + key + "\" : " + json.dumps(value) + "\n"
             file.write(row.replace(',', ' ;'))
