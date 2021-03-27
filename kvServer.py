@@ -43,6 +43,10 @@ def main():
                 while True:
 
                     request = conn.recv(BUFFER_SIZE)
+
+                    if not request:
+                        break
+
                     data = request
                     method = data.decode().split(" ")[0]
                     while len(data) == BUFFER_SIZE:
@@ -58,9 +62,7 @@ def main():
                     elif method == "DELETE":
                         delete()
 
-                    s.sendall("OK".encode())
-
-                    break
+                    conn.sendall("OK".encode())
 
 
 if __name__ == "__main__":

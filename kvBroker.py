@@ -20,9 +20,9 @@ def main():
     with open(args.i, 'r') as index_file:
         records = [str(line) for line in index_file]
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    for record in records:
 
-        for record in records:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
             # replicas: uniquely generated numbers of range [0, len(servers)]
             replicas = random.sample(range(0, len(servers)), args.k)
