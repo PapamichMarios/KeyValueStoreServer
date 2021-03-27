@@ -3,7 +3,7 @@ import socket
 
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
-BUFFER_SIZE = 16
+BUFFER_SIZE = 1024
 
 # arg parsing
 parser = argparse.ArgumentParser(description="Process arguments for data creation")
@@ -42,17 +42,22 @@ def main():
 
                 while True:
 
-                    request = conn.recv(BUFFER_SIZE)
-
-                    if not request:
+                    # receive request size
+                    request_size = conn.recv(BUFFER_SIZE)
+                    if not request_size:
                         break
 
-                    data = request
-                    method = data.decode().split(" ")[0]
-                    while len(data) == BUFFER_SIZE:
+                    # ack for request size
+                    conn.sendall("OK".encode())
+
+                    # read data from request
+                    request = conn.recv(BUFFER_SIZE)
+                    method = request.decode().split(" ")[0]
+                    while len(request) < int(request_size):
                         data = conn.recv(BUFFER_SIZE)
                         request = request + data
 
+                    # process request
                     if method == "PUT":
                         put()
                     elif method == "GET":
@@ -62,6 +67,8 @@ def main():
                     elif method == "DELETE":
                         delete()
 
+                    # send ok
+                    print('Received: ' + request)
                     conn.sendall("OK".encode())
 
 

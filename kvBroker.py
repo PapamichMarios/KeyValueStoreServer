@@ -2,7 +2,7 @@ import socket
 import argparse
 import random
 
-BUFFER_SIZE = 16
+BUFFER_SIZE = 1024
 
 
 def main():
@@ -20,20 +20,32 @@ def main():
     with open(args.i, 'r') as index_file:
         records = [str(line) for line in index_file]
 
+    i = 0
     for record in records:
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
+            print('Record ', i)
             # replicas: uniquely generated numbers of range [0, len(servers)]
             replicas = random.sample(range(0, len(servers)), args.k)
             for replica in [0]:  # replicas:
+
+                # connect
                 s.connect((servers[replica][0], int(servers[replica][1])))
 
+                # send request size & request
                 request = ("PUT " + record.replace('\n', '')).encode()
+                s.send(str(len(request)).encode())
+                data = s.recv(BUFFER_SIZE)
                 s.sendall(request)
 
+                # receive ack from server
                 data = s.recv(BUFFER_SIZE)
-                print('Server ' + str(replica) + ': ' + data.decode())
+
+                # print methods
+                print('\tServer ' + str(replica) + ': ' + data.decode())
+
+        i += 1
 
 
 if __name__ == "__main__":
