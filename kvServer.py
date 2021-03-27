@@ -1,6 +1,8 @@
 import argparse
 import socket
 
+from trie import Trie
+
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
 BUFFER_SIZE = 1024
@@ -12,23 +14,12 @@ parser.add_argument('-p', type=int, help="port", default=PORT)
 args = parser.parse_args()
 
 
-def delete():
-    print('Not implemented yet')
-
-
-def put():
-    print('Not implemented yet')
-
-
-def get():
-    print('Not implemented yet')
-
-
-def query():
-    print('Not implemented yet')
-
-
 def main():
+
+    # init Trie
+    trie = Trie()
+
+    # listen for connections
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
         print('Listening on ' + args.a + ':' + str(args.p))
@@ -38,10 +29,8 @@ def main():
         while True:
             conn, addr = s.accept()
             with conn:
-                print('Connected by', addr)
 
                 while True:
-
                     # receive request size
                     request_size = conn.recv(BUFFER_SIZE)
                     if not request_size:
@@ -59,13 +48,13 @@ def main():
 
                     # process request
                     if method == "PUT":
-                        put()
+                        trie.put()
                     elif method == "GET":
-                        get()
+                        trie.get()
                     elif method == "QUERY":
-                        query()
+                        trie.query()
                     elif method == "DELETE":
-                        delete()
+                        trie.delete()
 
                     # send ok
                     print('Received: ' + request)
