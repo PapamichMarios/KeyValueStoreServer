@@ -73,38 +73,38 @@ Let's say that we have 3 kvServer.py instances running in 3 different ports and 
 
 "key_1" : {"location": {"location": {"height": 5.104534969166997}} ; "level": 28}
 
-- input: GET key_0 
+- kv_broker$:  GET key_0 
 
   output: "key_0": {"street": "dkbfx", "address": {"level": 33}, "height": 91.21095965769372, "level": 41}
   
-- input: QUERY key_0
+- kv_broker$:  QUERY key_0
 
   output: "key_0": {"street": "dkbfx", "address": {"level": 33}, "height": 91.21095965769372, "level": 41}
   
-- input: QUERY key_0.address.level
+- kv_broker$: QUERY key_0.address.level
 
   output: "key_0.address.level": 33
   
-- input GET kEsda
+- kv_broker$:  GET kEsda
 
   output: ERROR: NOT_FOUND
   
-- input: DELETE key_0
+- kv_broker$:  DELETE key_0
 
   output: OK
   
-- input: GET key_0
+- kv_broker$:  GET key_0
 
   output: ERROR: NOT_FOUND
   
 Let's say one server dies unexpectedly:
 
-- input: DELETE key_1
+- kv_broker$:  DELETE key_1
 
   output: ERROR - REPLICA_IS_DOWN: CANNOT_EXECUTE
   
 Now another one dies (remember k=2)
 
-- input: GET key_1
+- kv_broker$:  GET key_1
 
   output: WARNING - REPLICA_IS_DOWN: CANNOT_GUARANTEE_CORRECT_OUTPUT

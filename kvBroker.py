@@ -24,13 +24,13 @@ def send_request(s: socket, request: bytes) -> str:
     # send request
     s.sendall(request)
 
-    # receive request size
-    request_size = int(s.recv(BUFFER_SIZE))
+    # receive response size
+    response_size = int(s.recv(BUFFER_SIZE))
     s.send(OK.encode())
 
     # receive response
     request = s.recv(BUFFER_SIZE)
-    while len(request) < request_size:
+    while len(request) < response_size:
         data = s.recv(BUFFER_SIZE)
         request = request + data
 
@@ -81,7 +81,7 @@ def main():
         request = input("kv_broker$: ")
         method = request.split(" ")[0]
         if not check_method(method):
-            print("\t" + BAD_SYNTAX)
+            print("\t" + ERROR + ": " + BAD_SYNTAX)
             continue
 
         down_servers = []
@@ -120,7 +120,7 @@ def main():
 
             # send request size & request
             response = send_request(sockets[x], request.encode())
-            # print('\tServer ' + str(x) + ': ' + response)
+            print('\tServer ' + str(x) + ': ' + response)
 
             # print response
             responses.add(response)
