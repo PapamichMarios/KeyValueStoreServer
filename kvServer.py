@@ -4,9 +4,10 @@ import socket
 from datetime import datetime
 from logging import log, log_error
 
-from errors import not_found, already_exists, bad_syntax
-from properties import GET, SUCCESS, PUT,  QUERY, DELETE, OK, BUFFER_SIZE
+from errors import not_found_response, already_exists_response, bad_syntax_response
+from properties import GET, SUCCESS, PUT, QUERY, DELETE, OK, BUFFER_SIZE
 from trie import Trie
+from utils import construct_response
 
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
@@ -18,12 +19,12 @@ def get(conn: socket, request: str, trie: Trie):
 
     value = trie.get(key=key)
     if not value:
-        not_found(s=conn, request=request)
+        not_found_response(s=conn, request=request)
         return
 
-    value = json.dumps(value).replace(",", ";")
+    # value = json.dumps(value).replace(",", ";")
     log(code=SUCCESS, request=request)
-    conn.sendall(("\"" + key + "\": " + value).encode())
+    construct_response(s=conn, data={key: value}, success=True)
 
 
 def put(conn: socket, request: str, trie: Trie):
@@ -38,17 +39,17 @@ def put(conn: socket, request: str, trie: Trie):
         # check if already exists
         value = trie.get(key=key)
         if value:
-            already_exists(s=conn, request=request)
+            already_exists_response(s=conn, request=request)
             return
 
         trie.put(key=key, value=put_request[key])
 
         # send ok
         log(code=SUCCESS, request=request)
-        conn.sendall(OK.encode())
+        construct_response(s=conn, data=OK, success=True)
 
     except:
-        bad_syntax(s=conn, request=request)
+        bad_syntax_response(s=conn, request=request)
 
 
 def query(conn: socket, request: str, trie: Trie):
@@ -60,24 +61,24 @@ def query(conn: socket, request: str, trie: Trie):
     # get the top level key
     value = trie.get(key=key)
     if not value:
-        not_found(s=conn, request=request)
+        not_found_response(s=conn, request=request)
         return
 
     # if user only gave first level key return it
     if len(keys.split(".")) == 1:
-        value = json.dumps(value).replace(",", ";")
+        # value = json.dumps(value).replace(",", ";")
         log(code=SUCCESS, request=request)
-        conn.sendall(("\"" + keys + "\": " + value).encode())
+        construct_response(s=conn, data={key: value}, success=True)
         return
 
     result = trie.query(value=value, subkeys=subkeys, level=0)
     if not result:
-        not_found(s=conn, request=request)
+        not_found_response(s=conn, request=request)
         return
 
     # to string for print method based on return type
     log(code=SUCCESS, request=request)
-    conn.sendall(("\"" + keys + "\": " + result).encode())
+    construct_response(s=conn, data={keys: json.loads(result)}, success=True)
 
 
 def delete(conn: socket, request: str, trie: Trie):
@@ -87,13 +88,13 @@ def delete(conn: socket, request: str, trie: Trie):
     # check if top level key exists
     value = trie.get(key=key)
     if not value:
-        not_found(s=conn, request=request)
+        not_found_response(s=conn, request=request)
         return
 
     trie.delete(key=key)
 
     log(code=DELETE, request=request)
-    conn.sendall(OK.encode())
+    construct_response(s=conn, data=OK, success=True)
 
 
 def main():

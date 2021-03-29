@@ -1,9 +1,11 @@
+import json
 import socket
 import argparse
 import random
 
-from errors import send_error
-from properties import BUFFER_SIZE, PUT, GET, QUERY, DELETE, ERROR, BAD_SYNTAX
+from properties import BUFFER_SIZE, PUT, GET, QUERY, DELETE, ERROR, BAD_SYNTAX, NOT_FOUND, REPLICA_IS_DOWN, \
+    CANNOT_EXECUTE, CANNOT_GUARANTEE_CORRECT_OUTPUT, OK
+from utils import print_response
 
 
 def check_method(method: str) -> bool:
@@ -13,17 +15,26 @@ def check_method(method: str) -> bool:
     return True
 
 
-def send_request(s: socket, request: bytes, index: int) -> str:
+def send_request(s: socket, request: bytes) -> str:
+
+    # send request size & ack
     s.send(str(len(request)).encode())
-    data = s.recv(BUFFER_SIZE)
+    response = s.recv(BUFFER_SIZE)
+
+    # send request
     s.sendall(request)
 
-    # receive ack from server
-    data = s.recv(BUFFER_SIZE)
+    # receive request size
+    request_size = int(s.recv(BUFFER_SIZE))
+    s.send(OK.encode())
 
-    # print methods
-    print('\tServer ' + str(index) + ': ' + data.decode())
-    return data
+    # receive response
+    request = s.recv(BUFFER_SIZE)
+    while len(request) < request_size:
+        data = s.recv(BUFFER_SIZE)
+        request = request + data
+
+    return request.decode()
 
 
 def main():
@@ -50,13 +61,17 @@ def main():
         replicas = random.sample(range(0, len(servers)), args.k)
         for replica in replicas:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-
                 # connect
-                s.connect((servers[replica][0], int(servers[replica][1])))
+                try:
+                    s.connect((servers[replica][0], int(servers[replica][1])))
+                except ConnectionRefusedError:
+                    print("\tServer " + str(replica) + ": " + REPLICA_IS_DOWN)
+                    continue
 
                 # send request size & request
                 request = ("PUT " + record.replace('\n', '')).encode()
-                send_request(s, request, replica)
+                response = send_request(s, request)
+                print('\tServer ' + str(replica) + ': ' + response)
 
         i += 1
 
@@ -65,17 +80,63 @@ def main():
         request = input("kv_broker$: ")
         method = request.split(" ")[0]
         if not check_method(method):
-            print("\t" + send_error(code=ERROR, reason=BAD_SYNTAX).decode())
+            print("\t" + BAD_SYNTAX)
             continue
 
+        down_servers = []
+        sockets = []
+        # connect to servers
         for x in range(0, len(servers)):
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                # connect
-                s.connect((servers[x][0], int(servers[x][1])))
 
-                # send request size & request
-                response = send_request(s, request.encode(), x)
-                
+            sockets.append(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+
+            # connect
+            try:
+                sockets[x].connect((servers[x][0], int(servers[x][1])))
+            except ConnectionRefusedError:
+                down_servers.append(x)
+
+        # print warnings
+        if len(down_servers) > 0 and method == DELETE:
+            print("\t" + ERROR + " - " + REPLICA_IS_DOWN + ": " + CANNOT_EXECUTE)
+            continue
+
+        if len(down_servers) >= args.k and (method == GET or method == QUERY):
+            print("\t" + ERROR + " - " + REPLICA_IS_DOWN + ": " + CANNOT_GUARANTEE_CORRECT_OUTPUT)
+
+        # send requests
+        responses = set()
+        for x in range(0, len(servers)):
+
+            # check if server is down
+            is_down = False
+            for server in down_servers:
+                if server == x:
+                    is_down = True
+
+            if is_down:
+                continue
+
+            # send request size & request
+            response = send_request(sockets[x], request.encode())
+            # print('\tServer ' + str(x) + ': ' + response)
+
+            # print response
+            responses.add(response)
+            sockets[x].close()
+
+        # print result
+        has_printed = False
+        for response in responses:
+            response = json.loads(response.replace(";", ","))
+            if response["success"]:
+                has_printed = True
+                print_response(response=response)
+
+        if not has_printed:
+            response = json.loads(next(iter(responses)).replace(";", ","))
+            print_response(response=response)
+
 
 if __name__ == "__main__":
     main()
