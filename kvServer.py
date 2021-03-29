@@ -1,34 +1,15 @@
 import argparse
 import json
 import socket
+from datetime import datetime
+from logging import log, log_error
 
+from errors import not_found, already_exists, bad_syntax
+from properties import GET, SUCCESS, PUT,  QUERY, DELETE, OK, BUFFER_SIZE
 from trie import Trie
 
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 65432  # Port to listen on (non-privileged ports are > 1023)
-BUFFER_SIZE = 1024
-
-# methods
-PUT = "PUT"
-QUERY = "QUERY"
-GET = "GET"
-DELETE = "DELETE"
-
-# messages
-OK = "OK"
-ERROR = "ERROR"
-SUCCESS = "SUCCESS"
-NOT_FOUND = "NOT FOUND"
-
-# arg parsing
-parser = argparse.ArgumentParser(description="Process arguments for data creation")
-parser.add_argument('-a', type=str, help="ip address", default=HOST)
-parser.add_argument('-p', type=int, help="port", default=PORT)
-args = parser.parse_args()
-
-
-def log(code: str, request: str):
-    print(code + ": " + request)
 
 
 def get(conn: socket, request: str, trie: Trie):
@@ -37,8 +18,7 @@ def get(conn: socket, request: str, trie: Trie):
 
     value = trie.get(key=key)
     if not value:
-        log(code=NOT_FOUND, request=request)
-        conn.sendall(NOT_FOUND.encode())
+        not_found(s=conn, request=request)
         return
 
     value = json.dumps(value).replace(",", ";")
@@ -58,8 +38,7 @@ def put(conn: socket, request: str, trie: Trie):
         # check if already exists
         value = trie.get(key=key)
         if value:
-            log(code=ERROR, request=request)
-            conn.sendall(ERROR.encode())
+            already_exists(s=conn, request=request)
             return
 
         trie.put(key=key, value=put_request[key])
@@ -69,8 +48,7 @@ def put(conn: socket, request: str, trie: Trie):
         conn.sendall(OK.encode())
 
     except:
-        log(code=ERROR, request=request)
-        conn.sendall(ERROR.encode())
+        bad_syntax(s=conn, request=request)
 
 
 def query(conn: socket, request: str, trie: Trie):
@@ -82,8 +60,7 @@ def query(conn: socket, request: str, trie: Trie):
     # get the top level key
     value = trie.get(key=key)
     if not value:
-        log(code=NOT_FOUND, request=request)
-        conn.sendall(NOT_FOUND.encode())
+        not_found(s=conn, request=request)
         return
 
     # if user only gave first level key return it
@@ -95,8 +72,7 @@ def query(conn: socket, request: str, trie: Trie):
 
     result = trie.query(value=value, subkeys=subkeys, level=0)
     if not result:
-        log(code=NOT_FOUND, request=request)
-        conn.sendall(NOT_FOUND.encode())
+        not_found(s=conn, request=request)
         return
 
     # to string for print method based on return type
@@ -111,8 +87,7 @@ def delete(conn: socket, request: str, trie: Trie):
     # check if top level key exists
     value = trie.get(key=key)
     if not value:
-        log(code=NOT_FOUND, request=request)
-        conn.sendall(NOT_FOUND.encode())
+        not_found(s=conn, request=request)
         return
 
     trie.delete(key=key)
@@ -122,6 +97,12 @@ def delete(conn: socket, request: str, trie: Trie):
 
 
 def main():
+    # arg parsing
+    parser = argparse.ArgumentParser(description="Process arguments for data creation")
+    parser.add_argument('-a', type=str, help="ip address", default=HOST)
+    parser.add_argument('-p', type=int, help="port", default=PORT)
+    args = parser.parse_args()
+
     # init Trie
     trie = Trie()
 

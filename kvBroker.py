@@ -2,17 +2,18 @@ import socket
 import argparse
 import random
 
-BUFFER_SIZE = 1024
+from errors import send_error
+from properties import BUFFER_SIZE, PUT, GET, QUERY, DELETE, ERROR, BAD_SYNTAX
 
 
 def check_method(method: str) -> bool:
-    if method != "PUT" and method != "GET" and method != "QUERY" and method != "DELETE":
+    if method != PUT and method != GET and method != QUERY and method != DELETE:
         return False
 
     return True
 
 
-def send_request(s: socket, request: bytes, index: int):
+def send_request(s: socket, request: bytes, index: int) -> str:
     s.send(str(len(request)).encode())
     data = s.recv(BUFFER_SIZE)
     s.sendall(request)
@@ -22,6 +23,7 @@ def send_request(s: socket, request: bytes, index: int):
 
     # print methods
     print('\tServer ' + str(index) + ': ' + data.decode())
+    return data
 
 
 def main():
@@ -42,13 +44,12 @@ def main():
     i = 0
     # indexing data
     for record in records:
+        print('Record ', i)
 
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-
-            print('Record ', i)
-            # replicas: uniquely generated numbers of range [0, len(servers)]
-            replicas = random.sample(range(0, len(servers)), args.k)
-            for replica in [0]:  # replicas:
+        # replicas: uniquely generated numbers of range [0, len(servers)]
+        replicas = random.sample(range(0, len(servers)), args.k)
+        for replica in replicas:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
                 # connect
                 s.connect((servers[replica][0], int(servers[replica][1])))
@@ -64,17 +65,17 @@ def main():
         request = input("kv_broker$: ")
         method = request.split(" ")[0]
         if not check_method(method):
-            print("Invalid Method")
+            print("\t" + send_error(code=ERROR, reason=BAD_SYNTAX).decode())
             continue
 
-        for x in [0]:#range(0, len(servers)):
+        for x in range(0, len(servers)):
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 # connect
                 s.connect((servers[x][0], int(servers[x][1])))
 
                 # send request size & request
-                send_request(s, request.encode(), x)
-
+                response = send_request(s, request.encode(), x)
+                
 
 if __name__ == "__main__":
     main()
