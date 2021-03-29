@@ -1,6 +1,7 @@
 import argparse
 import json
-import random, string
+import random
+import string
 
 '''
 createData -k keyFile.txt -n 1000 -d 3 -l 4 -m 5

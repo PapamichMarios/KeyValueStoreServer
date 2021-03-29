@@ -4,7 +4,7 @@ import argparse
 import random
 
 from properties import BUFFER_SIZE, PUT, GET, QUERY, DELETE, ERROR, BAD_SYNTAX, NOT_FOUND, REPLICA_IS_DOWN, \
-    CANNOT_EXECUTE, CANNOT_GUARANTEE_CORRECT_OUTPUT, OK
+    CANNOT_EXECUTE, CANNOT_GUARANTEE_CORRECT_OUTPUT, OK, WARNING
 from utils import print_response
 
 
@@ -71,7 +71,8 @@ def main():
                 # send request size & request
                 request = ("PUT " + record.replace('\n', '')).encode()
                 response = send_request(s, request)
-                print('\tServer ' + str(replica) + ': ' + response)
+                response = json.loads(response.replace(";", ","))
+                print('\tServer ' + str(replica) + ': ' + json.dumps(response["data"])[1:-1])
 
         i += 1
 
@@ -102,7 +103,7 @@ def main():
             continue
 
         if len(down_servers) >= args.k and (method == GET or method == QUERY):
-            print("\t" + ERROR + " - " + REPLICA_IS_DOWN + ": " + CANNOT_GUARANTEE_CORRECT_OUTPUT)
+            print("\t" + WARNING + " - " + REPLICA_IS_DOWN + ": " + CANNOT_GUARANTEE_CORRECT_OUTPUT)
 
         # send requests
         responses = set()
