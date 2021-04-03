@@ -69,42 +69,50 @@ The kvBroker.py indexes data between k kvServer.py replicas and then is open to 
 # Sample Execution
 Let's say that we have 3 kvServer.py instances running in 3 different ports and two of them contain:
  
-"key_0" : {"street": "dkbfx" ; "address": {"level": 33} ; "height": 91.21095965769372 ; "level": 41}
+```"key_0" : {"street": "dkbfx" ; "address": {"level": 33} ; "height": 91.21095965769372 ; "level": 41}```
 
-"key_1" : {"location": {"location": {"height": 5.104534969166997}} ; "level": 28}
+```"key_1" : {"location": {"location": {"height": 5.104534969166997}} ; "level": 28}```
 
-- kv_broker$:  GET key_0 
-
-  output: "key_0": {"street": "dkbfx", "address": {"level": 33}, "height": 91.21095965769372, "level": 41}
+```
+kv_broker$:  GET key_0 
+  "key_0": {"street": "dkbfx", "address": {"level": 33}, "height": 91.21095965769372, "level": 41}
+```
   
-- kv_broker$:  QUERY key_0
-
-  output: "key_0": {"street": "dkbfx", "address": {"level": 33}, "height": 91.21095965769372, "level": 41}
+```
+kv_broker$:  QUERY key_0
+  "key_0": {"street": "dkbfx", "address": {"level": 33}, "height": 91.21095965769372, "level": 41}
+```
   
-- kv_broker$: QUERY key_0.address.level
-
-  output: "key_0.address.level": 33
+```
+kv_broker$: QUERY key_0.address.level
+  "key_0.address.level": 33
+```
   
-- kv_broker$:  GET kEsda
-
-  output: ERROR: NOT_FOUND
+```
+kv_broker$:  GET kEsda
+  ERROR: NOT_FOUND
+```
   
-- kv_broker$:  DELETE key_0
-
-  output: OK
+```
+kv_broker$:  DELETE key_0
+  OK
+```
   
-- kv_broker$:  GET key_0
-
-  output: ERROR: NOT_FOUND
+```
+kv_broker$:  GET key_0
+  ERROR: NOT_FOUND
+```
   
 Let's say one server dies unexpectedly:
 
-- kv_broker$:  DELETE key_1
-
-  output: ERROR - REPLICA_IS_DOWN: CANNOT_EXECUTE
+```
+kv_broker$:  DELETE key_1
+  ERROR - REPLICA_IS_DOWN: CANNOT_EXECUTE
+```
   
 Now another one dies (remember k=2)
 
-- kv_broker$:  GET key_1
-
-  output: WARNING - REPLICA_IS_DOWN: CANNOT_GUARANTEE_CORRECT_OUTPUT
+```
+kv_broker$:  GET key_1
+  WARNING - REPLICA_IS_DOWN: CANNOT_GUARANTEE_CORRECT_OUTPUT
+```
